@@ -6,8 +6,7 @@ import shap
 import requests
 
 CSV_FILE_NAME = "data.csv"
-#API_URL = "http://app:8000/api/"
-API_URL = "http://localhost:5000/api/"
+API_URL = "http://app:8000/api/"
 
 def display_prediction(prediction) :
     if prediction == 0 :
@@ -25,6 +24,7 @@ def display_waterfall(features, features_values, shap_values) :
     waterfall.set_size_inches(8, 12)
     st.pyplot(fig)
 
+
 def main() :
     df = pd.read_csv(CSV_FILE_NAME)
     selected_features = list(df.columns)
@@ -40,6 +40,7 @@ def main() :
     st.title("Demande d'emprunt")
     if st.button("Lancer la simulation") :
         data = {"selected_index": selected_index, "shap_max_display" : 10}
+        print(data)
         response = requests.post(API_URL + "predict", json = data)
         data = response.json()
         display_prediction(data["prediction"])

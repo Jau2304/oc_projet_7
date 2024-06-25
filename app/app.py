@@ -5,13 +5,13 @@ import pickle
 import shap
 
 CSV_FILE_NAME = "data.csv"
-CLASSIFIER_FILE_PATH = "../models/best_model.pkl"
-ACCEPTANCE_FILE_PATH = "../models/acceptance.txt"
+CLASSIFIER_FILE_NAME = "classifier.pkl"
+ACCEPTANCE = 0.5
 
 
-def load_data(csv_file_name, classifier_file_path) :
+def load_data(csv_file_name, classifier_file_name) :
     df = pd.read_csv(csv_file_name)
-    with open(classifier_file_path, "rb") as file :
+    with open(classifier_file_name, "rb") as file :
         classifier = pickle.load(file)
     explainer = shap.Explainer(classifier, df)
     return df, classifier, explainer
@@ -30,14 +30,6 @@ def get_shap_values(row, explainer, shap_max_display) :
     top_shap_values = shap_values[0][top_features_indices].tolist()
     return {"top_features": top_features, "top_features_values": top_features_values, "top_shap_values": top_shap_values}
 
-def get_acceptance(acceptance_file_path, model_file_path) :
-    with open(acceptance_file_path, "r") as file :
-        lines = file.readlines()
-    for line in lines :
-        content = line.split(" : ")
-        if content[0] == model_file_path :
-            return float(content[1])
-
 def get_prediction(row, classifier, acceptance) :
     proba = classifier.predict_proba(row)[0, 1]
     prediction = int(proba > acceptance)
@@ -46,7 +38,7 @@ def get_prediction(row, classifier, acceptance) :
 
 def create_app() :
 
-    df, classifier, explainer = load_data(CSV_FILE_NAME, CLASSIFIER_FILE_PATH)
+    df, classifier, explainer = load_data(CSV_FILE_NAME, CLASSIFIER_FILE_NAME)
     
     app = Flask(__name__)
 
@@ -54,8 +46,7 @@ def create_app() :
     def predict() :
         row, shap_max_display = read_request(request.json, df)
         output = get_shap_values(row, explainer, shap_max_display)
-        acceptance = get_acceptance(ACCEPTANCE_FILE_PATH, CLASSIFIER_FILE_PATH)
-        output["prediction"] = get_prediction(row, classifier, acceptance)
+        output["prediction"] = get_prediction(row, classifier, ACCEPTANCE)
         return jsonify(output)
     
     return app
